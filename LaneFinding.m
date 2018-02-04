@@ -4,14 +4,15 @@ v = VideoReader('project_video.mp4');
 OutVideo = VideoWriter('OutPut.mp4','MPEG-4');
 OutVideo.open();
 %设置视频播放的起始时间
-%v.CurrentTime = 39;
+%v.CurrentTime = 39.5;%容易出现奇怪的检测边线
+%v.CurrentTime = 20;%容易丢到一侧检测边线
 v.CurrentTime = 0;
 
 %% 读入相机校准参数
 load('./camera_cal/cameraParams');
 %相机内部参数结构体
 camIntrinsics = cameraIntrinsics(cameraParams.FocalLength, cameraParams.PrincipalPoint, cameraParams.ImageSize);
-%相机距离地面高度（估计）。因为一类车的车头高度1.3，加上摄像头加上架子基本上就是这个数值。
+%相机距离地面高度（估计）。因为一类车的车头高度1.3，加上摄像头几架基本上就是这个数值。
 height = 1.4;
 sensor = monoCamera(camIntrinsics, height);
 
@@ -48,14 +49,21 @@ while hasFrame(v)
      
     %% 标记属于交通标志线的像素
     %使用均值和方差阈值+EM算法的一种方法来提取交通标志线
-     AFrame = rgb2gray(AFrame);
-     %这里可以对交通标志线的识别方位可以做重新微调
-     vehicleROI = outView;
-     laneSensitivity = 0.25;
-     approxLaneMarkerWidthVehicle = 0.25; % 25 centimeters
-     AFrame = segmentLaneMarkerRidge(AFrame, birdsEyeConfig, approxLaneMarkerWidthVehicle,...
-     'ROI', vehicleROI, 'Sensitivity', laneSensitivity);
+    %灰度变换
+    AFrame_gray = double(rgb2gray(AFrame));
+    %颜色变换
+    AFrame_lab = rgb2lab(AFrame);
+    AFrame_lab = (AFrame_lab(:,:,3) + 128);
+    
+    p = 75/100;
+    AFrame = AFrame_gray.*p + AFrame_lab.*(1-p);
      
+    %这里可以对交通标志线的识别区域可以做重新微调
+    vehicleROI = outView;
+    laneSensitivity = 0.25;
+    approxLaneMarkerWidthVehicle = 0.25; % 25 centimeters
+    AFrame = segmentLaneMarkerRidge(AFrame, birdsEyeConfig, approxLaneMarkerWidthVehicle,'ROI', vehicleROI, 'Sensitivity', laneSensitivity);
+  
      %% 初始化交通线建模过程
      %转换到车体坐标系下，并假设路面是平整的。
      [imageX, imageY] = find(AFrame);
@@ -99,10 +107,10 @@ while hasFrame(v)
     hf.Name = num2str(v.CurrentTime);
     OutVideo.writeVideo(AFrame_Vehicle);
     drawnow;
-     if(v.CurrentTime > inf)
-         OutVideo.close();
-         break;
-     end
+%     if(v.CurrentTime > inf)
+%         OutVideo.close();
+%         break;
+%     end
 end
 OutVideo.close();
 
@@ -156,7 +164,6 @@ function [curvature] = laneBoundaryCurvature(Aboundary,xVehiclePoints)
 end
 
 function [boundaries] = laneBoundaryFilter2(this_boundaries,xVehiclePoints)
-    %% 利用曲率半径屏蔽掉不合理的边界线
     boundaries = [];
     Counter = size(this_boundaries,2);
     for i = 1:Counter
