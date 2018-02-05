@@ -1,39 +1,21 @@
 ## Advanced Lane Finding
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
+## A Supplementary Specification for Advanced Lane Finding Assignment 
 
-In this project, your goal is to write a software pipeline to identify the lane boundaries in a video, but the main output or product we want you to create is a detailed writeup of the project.  Check out the [writeup template](https://github.com/udacity/CarND-Advanced-Lane-Lines/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup.  
+The self-driving car is one kind of robot, so it should relate to the technologies that are taught at college. We list these connections, which hopefully is helpful to organize the knowledge. The algorithms that are used in software packages should be much more perfect than descriptions here, but understanding the relationships makes me, a student, feel relief.
 
-Creating a great writeup:
----
-A great writeup should include the rubric points as well as your description of how you addressed each point.  You should include a detailed description of the code used in each step (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
+The relationship between the perspective protection which is a built-in OpenCV and the projection model which is taught in the first class of image processing is a shrunk camera matrix. In central projection model, the camera matrix is a three by four matrix. When you take a picture of another picture that is parallel to the camera, the third column of the camera matrix is useless and can be removed. Then, this shrunk matrix can be estimated from four points in the original picture together with their corresponding image points in the new picture that you would like to make. The original picture can be mapped to another viewpoint. You can learn it from an excellent teacher at https://www.youtube.com/watch?v=kG0vRSLyWvs.
 
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
+The Udacity suggests that we do every calculation in the image coordinate, which do not mean that the rules about coordinates of robot arms is useless. On the contrary, working in robot coordinate will simplify the entire procedure. Firstly, the region of interest can be chosen in metric unit, e.g. the distance ahead of the camera, the bottom offset and the space to one side. My driving school told me that I should keep 100 meters behind the car in front if I drove 100 kph. I think the self-driving car should do the same. Secondly, if we assume that the road is a flat surface and the position of the camera is precisely known, we can map the image coordinate to the root coordinate. The manually choosing four points in the respective transform is no need. Furthermore, the bird’s-eye plot that you create with the perspective transform is an image that is parallel to the XY plane of the robot. There is no theoretically distortion that may prevent you from fitting the lane boundary. Lastly, we can remove the modeled lane boundary pixels from the image because the width of a lane boundary is prescribed by decree. This procedure will simplify the modeling procedure of other boundaries. 
 
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup.
+The teachers in colleges tend to complicate a sample task, and the teachers in the Udacity tend to simplify the knowledge and give complex assignment. As a student, I’d rather to know a real commercial self-driving car. The derivative in one direction is a sample technology to mark the pixels that belong to the lane boundary just because the car is driving along that boundary, and there are many pixels which are mis-marks. We have to adjust many thresholds, which is impossible in a commercial self-driving car. This technology is suitable for a mobile robot toy. I doubt that the Google self-driving car uses this technology. If I check the database, I can find thousands of papers that has partially solved the problem, but I will never know which one is chosen by Google. The MATLAB uses the algorithm [1] of Nieto et al. to mask the pixels that belong to the lane boundary. It overcomes the shortcomings of the one direction derivative; furthermore, it also uses relationships between different frames because the EM algorithm is installed by the result of the prior frame. Then, the RANSAC algorithm, which is famous, is to fit the boundary. Every computer vision class in the college will teach this algorithm. The inlier points of the RANSAC will provide a similar function of moving windows. You can learn the RANSAC algorithm from another famous teacher at https://www.youtube.com/watch?v=oT9c_LlFBqs. 
 
-The Project
----
+The unloaded files contain a few improvements on the official example which can be found at https://www.mathworks.com/help/driving/examples/visual-perception-using-monocular-camera.html. The RANSAC algorithm will automatically stop when most of the pixels are associated with modeled lane boundaries. If only one boundary can be found, the last position of the mission boundary is used. If more than two boundaries are found, two boundaries whose positions are nearest the last successfully founded boundaries are used. Furthermore, the lane curvature, which is the idea of Udacity, is used to reject false detection. A mixture figure of the LAB color and the gray scale is used to ensure that the boundaries are brighter than the pavement in all frames so that the algorithm in [1] keeps in good shape. In summary, I feel relief if I can connect the Udacity and the class in my school. 
 
-The goals / steps of this project are the following:
 
-* Compute the camera calibration matrix and distortion coefficients given a set of chessboard images.
-* Apply a distortion correction to raw images.
-* Use color transforms, gradients, etc., to create a thresholded binary image.
-* Apply a perspective transform to rectify binary image ("birds-eye view").
-* Detect lane pixels and fit to find the lane boundary.
-* Determine the curvature of the lane and vehicle position with respect to center.
-* Warp the detected lane boundaries back onto the original image.
-* Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
-The images for camera calibration are stored in the folder called `camera_cal`.  The images in `test_images` are for testing your pipeline on single frames.  If you want to extract more test images from the videos, you can simply use an image writing method like `cv2.imwrite()`, i.e., you can read the video in frame by frame as usual, and for frames you want to save for later you can write to an image file.  
+# References 
 
-To help the reviewer examine your work, please save examples of the output from each stage of your pipeline in the folder called `ouput_images`, and include a description in your writeup for the project of what each image shows.    The video called `project_video.mp4` is the video your pipeline should work well on.  
-
-The `challenge_video.mp4` video is an extra (and optional) challenge for you if you want to test your pipeline under somewhat trickier conditions.  The `harder_challenge.mp4` video is another optional challenge and is brutal!
-
-If you're feeling ambitious (again, totally optional though), don't stop there!  We encourage you to go out and take video of your own, calibrate your camera and show us how you would implement this project from scratch!
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+[1]	M. Nieto, J. Arróspide Laborda, and L. Salgado, "Road environment modeling using robust perspective analysis and recursive Bayesian segmentation," Machine Vision and Applications, journal article vol. 22, no. 6, pp. 927-945, November 01 2011.
 
